@@ -243,6 +243,7 @@ namespace SerialCommunication
         {
             timerOefening3.Enabled = tabControl.SelectedIndex == 3;
             timerOefening4.Enabled = tabControl.SelectedIndex == 4;
+            timerOefening5.Enabled = tabControl.SelectedIndex == 5;
         }
 
         private void timerOefening3_Tick(object sender, EventArgs e)
@@ -299,6 +300,46 @@ namespace SerialCommunication
                     
                     int value = Int32.Parse(antwoord);
                     labelAnalog0.Text = value.ToString();
+                }
+            }
+            catch (Exception exception)
+            {
+                labelStatus.Text = "Error: " + exception.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+            }
+        }
+
+        private void timerOefening5_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    serialPortArduino.ReadExisting();
+                    string commandoA0 = "get a0";
+                    
+                    serialPortArduino.WriteLine(commandoA0);
+                    string antwoord0 = serialPortArduino.ReadLine();
+                    antwoord0 = antwoord0.TrimEnd();
+                    antwoord0 = antwoord0.Substring(4);
+                    labelGewensteTemp.Text = antwoord0;
+
+                    int analog0 = Int32.Parse(antwoord0);
+                    double gewensteTemp = ((analog0 / 1023.0) * 40.0) + 5.0;
+                    labelGewensteTemp.Text = gewensteTemp.ToString("0.0");
+                    
+                    string commandoA1 = "get A1";
+                    serialPortArduino.WriteLine(commandoA1);
+                    string antwoord1 = serialPortArduino.ReadLine();
+                    antwoord1 = antwoord1.TrimEnd();
+                    antwoord1 = antwoord1.Substring(4);
+                    labelGewensteTemp.Text = antwoord1;
+
+                    int analog1 = Int32.Parse(antwoord1);
+                    double huidigeTemp = ((analog1 / 1023.0) * 500.0);
+                    labelHuidigeTemp.Text = huidigeTemp.ToString("0.0");
                 }
             }
             catch (Exception exception)
