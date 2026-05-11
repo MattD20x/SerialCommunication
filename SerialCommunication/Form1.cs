@@ -318,28 +318,42 @@ namespace SerialCommunication
                 if (serialPortArduino.IsOpen)
                 {
                     serialPortArduino.ReadExisting();
+
+                    // Lees gewenste temperatuur uit potmeter
                     string commandoA0 = "get a0";
-                    
                     serialPortArduino.WriteLine(commandoA0);
                     string antwoord0 = serialPortArduino.ReadLine();
                     antwoord0 = antwoord0.TrimEnd();
                     antwoord0 = antwoord0.Substring(4);
-                    labelGewensteTemp.Text = antwoord0;
+                    //labelGewensteTemp.Text = antwoord0;
 
                     int analog0 = Int32.Parse(antwoord0);
                     double gewensteTemp = ((analog0 / 1023.0) * 40.0) + 5.0;
                     labelGewensteTemp.Text = gewensteTemp.ToString("0.0");
-                    
-                    string commandoA1 = "get A1";
+
+                    // Lees huidige temperatuur uit sensor
+                    string commandoA1 = "get a1";
                     serialPortArduino.WriteLine(commandoA1);
                     string antwoord1 = serialPortArduino.ReadLine();
                     antwoord1 = antwoord1.TrimEnd();
                     antwoord1 = antwoord1.Substring(4);
-                    labelGewensteTemp.Text = antwoord1;
+                    //labelHuidigeTemp.Text = antwoord1;
 
                     int analog1 = Int32.Parse(antwoord1);
                     double huidigeTemp = ((analog1 / 1023.0) * 500.0);
                     labelHuidigeTemp.Text = huidigeTemp.ToString("0.0");
+
+                    //Zet led d2 aan bij hogere gewenste waarde
+                    string commandoD2;
+                    if (huidigeTemp < gewensteTemp)
+                    {
+                        commandoD2 = "set d2 high";
+                    }
+                    else
+                    {
+                        commandoD2 = "set d2 low";
+                    }
+                    serialPortArduino.WriteLine(commandoD2);
                 }
             }
             catch (Exception exception)
