@@ -2,6 +2,7 @@
 using System.CodeDom;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Data;
 using System.Drawing;
 using System.IO.Ports;
@@ -244,6 +245,7 @@ namespace SerialCommunication
             timerOefening3.Enabled = tabControl.SelectedIndex == 3;
             timerOefening4.Enabled = tabControl.SelectedIndex == 4;
             timerOefening5.Enabled = tabControl.SelectedIndex == 5;
+            timerTemperatuurAlarm.Enabled = tabControl.SelectedIndex == 6;
         }
 
         private void timerOefening3_Tick(object sender, EventArgs e)
@@ -355,6 +357,97 @@ namespace SerialCommunication
                     }
                     serialPortArduino.WriteLine(commandoD2);
                 }
+            }
+            catch (Exception exception)
+            {
+                labelStatus.Text = "Error: " + exception.Message;
+                serialPortArduino.Close();
+                radioButtonVerbonden.Checked = false;
+                buttonConnect.Text = "Connect";
+            }
+        }
+
+        int toestand = 0;
+
+        private void timerTemperatuurAlarm_Tick(object sender, EventArgs e)
+        {
+            try
+            {
+                if (serialPortArduino.IsOpen)
+                {
+                    serialPortArduino.ReadExisting();
+
+                    string commandoA0 = "get a0";
+                    serialPortArduino.WriteLine(commandoA0);
+                    string antwoord0 = serialPortArduino.ReadLine();
+                    antwoord0 = antwoord0.TrimEnd();
+                    antwoord0 = antwoord0.Substring(4);
+                    //labelGewensteTemp.Text = antwoord0;
+
+                    int analog0 = Int32.Parse(antwoord0);
+                    double alarmTemp = ((analog0 / 1023.0) * 70) - 10.0;
+                    labelAlarmTempVal.Text = alarmTemp.ToString("0.0");
+
+                    string commandoA1 = "get a1";
+                    serialPortArduino.WriteLine(commandoA1);
+                    string antwoord1 = serialPortArduino.ReadLine();
+                    antwoord1 = antwoord1.TrimEnd();
+                    antwoord1 = antwoord1.Substring(4);
+                    //labelHuidigeTemp.Text = antwoord1;
+
+                    int analog1 = Int32.Parse(antwoord1);
+                    double huidigeTemp = ((analog1 / 1023.0) * 500.0);
+                    labelHuidigeTempVal.Text = huidigeTemp.ToString("0.0");
+
+                    string commandoD5 = "get d5";
+                    serialPortArduino.WriteLine(commandoD5);
+                    string antwoord5 = serialPortArduino.ReadLine();
+                    antwoord5 = antwoord5.TrimEnd();
+                    antwoord5 = antwoord5.Substring(4);
+                    bool buttonBevestig = (antwoord5 == "1");
+
+                    if (toestand == 0 && huidigeTemp >= alarmTemp)
+                    {
+                        toestand = 1;
+                        labelStatusVal.Text = "ALARM";
+
+                        string ledAan = "set d2 high";
+                        serialPortArduino.WriteLine(ledAan);
+                        string buzzerAan = "set d3 high";
+                        serialPortArduino.WriteLine(buzzerAan);
+                    }
+                    else if (toestand == 1 && buttonBevestig == true)
+                    {
+                        if (huidigeTemp < alarmTemp)
+                        {
+                            toestand = 0;
+                            labelStatusVal.Text = "OK";
+
+                            string ledUit = "set d2 low";
+                            serialPortArduino.WriteLine(ledUit);
+                            string buzzerUit = "set d3 low";
+                            serialPortArduino.WriteLine(buzzerUit);
+                        }
+                        else if (huidigeTemp >= alarmTemp)
+                        {
+                            toestand = 2;
+                            labelStatusVal.Text = "BEVESTIGD";
+                            string ledAan = "set d2 high";
+                            serialPortArduino.WriteLine(ledAan);
+                            string buzzerUit = "set d3 low";
+                            serialPortArduino.WriteLine(buzzerUit);
+                        }
+                    }
+                    else if (toestand == 2 && huidigeTemp < alarmTemp)
+                    {
+                        toestand = 0;
+                        labelStatusVal.Text = "OK";
+                        string ledUit = "set d2 low";
+                        serialPortArduino.WriteLine(ledUit);
+                        string buzzerUit = "set d3 low";
+                        serialPortArduino.WriteLine(buzzerUit);
+                    }
+;                }
             }
             catch (Exception exception)
             {
